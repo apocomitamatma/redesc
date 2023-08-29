@@ -128,7 +128,7 @@ async def _authorize_impl(ctx: crescent.Context) -> None:
         return
     finally:
         running_oauth2_server = False
-    youtube_oauth2.update(dict(**json.loads(credentials.to_json())))
+    youtube_oauth2.update(dict(json.loads(credentials.to_json())))
     await youtube_oauth2.save_async()
     message = await ctx.respond("Uwierzytelniono!", ensure_message=True, ephemeral=True)
     await asyncio.sleep(3.5)
