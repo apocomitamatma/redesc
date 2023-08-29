@@ -4,6 +4,7 @@
 
 echo "Installing pip..."
 python3 -m ensurepip
+
 if [ $? -eq 0 ] ; then
     echo "Success: pip OK, installing dependencies..."
     yes | python3 -m pip install -r requirements.txt --quiet
