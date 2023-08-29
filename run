@@ -4,16 +4,16 @@
 ./install
 
 if [ $? -eq 0 ] ; then
-    echo "Success: dependencies have been installed."
+    echo "Success: dependencies OK, checking for obligatory files..."
 else
     echo "Error: dependencies could not be installed."
     exit 1
 fi
 
-if [ -e ./.env ] ; then
-    echo "Success: .env file found, running the bot..."
+if [ -e ./.env ] && [ -e oauth2.json ] &&  [ -e config.yml ] ; then
+    echo "Success: .env, oauth2.json and config.yml files found, running the bot..."
     python -OO -m redesc.app
 else
-    echo "Error: .env file not found, exiting..."
+    echo "Error: one of (1) .env, (2) oauth2.json and (3) config.yml files is missing, aborting..."
     exit 1
 fi
