@@ -393,7 +393,7 @@ class SubstituteCommand:
         current_limit = min((self.limit, n_diffs))
 
         async def on_end(context: miru.ViewContext) -> None:
-            context.defer()
+            await context.defer()
             nonlocal n_diffs
             diffs.clear()
             n_diffs = 0
@@ -483,6 +483,8 @@ class SubstituteCommand:
                                     else diff.old_title
                                 )
                             )
+                            + "\n"
+                            + f"https://www.youtube.com/watch?v={diff.video_id}"
                             + "\n"
                             + "-" * len(title)
                             + "\n"
@@ -597,7 +599,7 @@ class SubstituteCommand:
             )
             await view.start(response)
 
-        done_diffs = []
+        done_diffs: list[VideoDiff] = []
         if diffs:
             await make_message(ensure_message=True)
         else:
