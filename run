@@ -12,7 +12,7 @@ fi
 
 if [ -e ./.env ] && [ -e oauth2.json ] &&  [ -e config.yml ] ; then
     echo "Success: .env, oauth2.json and config.yml files found, running the bot..."
-    python -OO -m redesc.app
+    python3 -OO -m redesc.app
 else
     echo "Error: one of (1) .env, (2) oauth2.json and (3) config.yml files is missing, aborting..."
     exit 1
