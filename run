@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+./update
+./install
+
+if [ $? -eq 0 ] ; then
+    echo "Success: dependencies have been installed."
+else
+    echo "Error: dependencies could not be installed."
+    exit 1
+fi
+
+if [ -e ./.env ] ; then
+    echo ".env file found, running the bot..."
+    python -OO -m redesc.app
+else
+    echo ".env file not found, exiting..."
+    exit 1
+fi
