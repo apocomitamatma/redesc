@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "redesc"
+version = "0.1.0"
+description = ""
+authors = ["bswck <bswck.dev@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "~3.9.0"
+configzen = "^0.9.0"
+commonvars = "^0.3.0"
+hikari = "^2.0.0.dev120"
+hikari-miru = "^3.1.2"
+hikari-crescent = "^0.6.2"
+google-api-python-client = "^2.89.0"
+oauth2client = "<4.0.0"
+google-auth-oauthlib = "^1.0.0"
+python-dotenv = "^1.0.0"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.0.280"
+mypy = "^1.4.1"
+pylint = "^2.17.5"
+black = "^23.7.0"
+
+[tool.mypy]
+disable_error_code = ["method-assign", "import"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
