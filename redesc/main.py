@@ -570,7 +570,7 @@ class SubstituteCommand:
 
             embeds = create_embeds()
             done = 0
-            content = ""
+            content = f"_Komenda wywołana przez {command_context.member.mention}._\n"
             if done > 0:
                 content += f"Podmieniono opis w {done} filmach.\n"
             if current_page > current_limit:
