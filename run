@@ -11,9 +11,9 @@ else
 fi
 
 if [ -e ./.env ] ; then
-    echo ".env file found, running the bot..."
+    echo "Success: .env file found, running the bot..."
     python -OO -m redesc.app
 else
-    echo ".env file not found, exiting..."
+    echo "Error: .env file not found, exiting..."
     exit 1
 fi
