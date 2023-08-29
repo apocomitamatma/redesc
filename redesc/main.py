@@ -392,6 +392,13 @@ class SubstituteCommand:
         max_page = n_diffs - 1
         current_limit = min((self.limit, n_diffs))
 
+        async def on_end(context: miru.ViewContext) -> None:
+            context.defer()
+            nonlocal n_diffs
+            diffs.clear()
+            n_diffs = 0
+            await make_message()
+
         async def on_next_page(context: miru.ViewContext) -> None:
             await context.defer()
             nonlocal current_page
@@ -434,6 +441,7 @@ class SubstituteCommand:
                 )
             else:
                 diffs.pop(current_page)
+                done_diffs.append(diff)
                 max_page -= 1
                 current_limit -= 1
                 if current_page == max_page and max_page != 0:
@@ -465,29 +473,34 @@ class SubstituteCommand:
             if not diffs:
                 await command_context.respond("Seria podmian zakończona.")
 
-                log.write_text(
-                    "\n\n".join(
-                        (
-                            title := (
-                                f"{diff.old_title} -> {diff.new_title}"
-                                if diff.old_title != diff.new_title
-                                else diff.old_title
+                if done_diffs:
+                    log.write_text(
+                        "\n\n".join(
+                            (
+                                title := (
+                                    f"{diff.old_title} -> {diff.new_title}"
+                                    if diff.old_title != diff.new_title
+                                    else diff.old_title
+                                )
                             )
-                        )
-                        + "\n"
-                        + "-" * len(title)
-                        + "\n"
-                        + highlight_diffs(
-                            new_text=diff.new_description,
-                            old_text=diff.old_description,
-                            sep="\n",
-                        )
-                        for diff in orig_diffs
-                    ),
-                    encoding="utf-8",
-                )
+                            + "\n"
+                            + "-" * len(title)
+                            + "\n"
+                            + highlight_diffs(
+                                new_text=diff.new_description,
+                                old_text=diff.old_description,
+                                sep="\n",
+                            )
+                            for diff in done_diffs
+                        ),
+                        encoding="utf-8",
+                    )
 
-                await command_context.respond("Załączam raport:", attachment=log)
+                    await command_context.respond("Załączam raport:", attachment=log)
+                else:
+                    await command_context.respond(
+                        "Nie dokonano żadnej podmiany, dlatego nie ma raportu."
+                    )
                 return
 
             view = miru.View(timeout=None)
@@ -536,6 +549,14 @@ class SubstituteCommand:
                 )
                 view.add_item(submit_button)
 
+            end_button = miru.Button(
+                emoji="⏹️",
+                label="Zakończ" if done_diffs else "Anuluj",
+                custom_id="end",
+            )
+            end_button.callback = on_end
+            view.add_item(end_button)
+
             if current_limit > 1:
                 finalize_button = miru.Button(
                     emoji="⚙️",
@@ -576,7 +597,7 @@ class SubstituteCommand:
             )
             await view.start(response)
 
-        orig_diffs = diffs.copy()
+        done_diffs = []
         if diffs:
             await make_message(ensure_message=True)
         else:
