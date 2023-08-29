@@ -394,6 +394,8 @@ class SubstituteCommand:
 
         async def on_end(context: miru.ViewContext) -> None:
             await context.defer()
+            if not diffs:
+                return
             nonlocal n_diffs
             diffs.clear()
             n_diffs = 0
@@ -401,6 +403,8 @@ class SubstituteCommand:
 
         async def on_next_page(context: miru.ViewContext) -> None:
             await context.defer()
+            if not diffs:
+                return
             nonlocal current_page
             current_page += current_page + 1 <= max_page
             message = context.message
@@ -408,6 +412,8 @@ class SubstituteCommand:
 
         async def on_previous_page(context: miru.ViewContext) -> None:
             await context.defer()
+            if not diffs:
+                return
             nonlocal current_page
             current_page -= current_page - 1 >= 0
             message = context.message
@@ -423,6 +429,10 @@ class SubstituteCommand:
             if not reuse:
                 await context.defer()
             nonlocal current_page, max_page, current_limit
+            if not diffs:
+                if reuse:
+                    await context.defer()
+                return
             diff = diffs[current_page]
             try:
                 youtube_api.update_video_description(
@@ -497,7 +507,6 @@ class SubstituteCommand:
                         ),
                         encoding="utf-8",
                     )
-
                     await command_context.respond("Załączam raport:", attachment=log)
                 else:
                     await command_context.respond(
