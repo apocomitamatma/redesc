@@ -7,7 +7,7 @@ import miru
 from redesc.common import app, app_config, app_var, client, client_var, running_app_var
 
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = logging.getLogger("redesc.main")
 
 running_app_var.set(True)
 __import__("redesc.setup")

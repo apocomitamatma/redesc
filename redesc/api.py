@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 
 from typing import Any, cast
 
@@ -7,6 +8,7 @@ import googleapiclient.errors
 
 from redesc.common import youtube_oauth2
 
+_LOGGER = logging.getLogger("redesc.api")
 DEFAULT_LIMIT: int = 1000000
 
 
@@ -72,6 +74,12 @@ class YouTubeAPI:
         video_title: str | None = None,
         video_category_id: str | None = None,
     ) -> dict[str, Any]:
+        _LOGGER.info(
+            "Updating video %s title to %r and description to %r...",
+            video_id,
+            video_title,
+            description,
+        )
         if video_title is None or video_category_id is None:
             data = self.client.videos().list(
                 part="snippet",
