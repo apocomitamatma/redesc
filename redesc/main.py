@@ -30,6 +30,10 @@ OLD_MARKER = "-"
 NEW_MARKER = "+"
 SKIP_MARKER_RE = r"_?\((\d+) lini[aei] bez zmian\)_?"
 DIFF_SCOPES = ("tytuł", "opis")
+PLAYLIST_PATTERN: str = (
+    r"(https?://)?(www\.)?((youtube\.com|youtu\.be)/(playlist|watch\?v=[^&]+))"
+    r"&list=(?P<playlist_id>[^&]+)"
+)
 
 plugin: crescent.Plugin[hikari.GatewayBot, None] = crescent.Plugin()
 running_oauth2_server = False
@@ -275,8 +279,18 @@ class SubstituteCommand:
         expression = argument_unescape(self.expression)
 
         playlist_id = self.playlist_id
+
         if playlist_id is None:
             playlist_id = app_config.default_playlist_id
+        elif match := re.match(PLAYLIST_PATTERN, playlist_id):
+            playlist_id = match.group("playlist_id")
+            if not playlist_id:
+                await command_context.respond(
+                    "Niepoprawny identyfikator playlisty.", ephemeral=True
+                )
+                return
+
+        _LOGGER.info("Using playlist ID: %s", playlist_id)
 
         log_ts = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
         log_filename = f"log-{log_ts}.txt"
