@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-# Install pip & dependencies
+SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+cd $SCRIPTPATH
 
 echo "Installing pip..."
 python3 -m ensurepip
