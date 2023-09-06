@@ -390,6 +390,7 @@ class SubstituteCommand:
         current_page = 0
         n_diffs = len(diffs)
         max_page = n_diffs - 1
+        left_over = 0
         current_limit = min((self.limit, n_diffs))
 
         async def on_end(context: miru.ViewContext) -> None:
@@ -425,14 +426,14 @@ class SubstituteCommand:
             with_title: bool = self.include_titles,
             with_description: bool = self.include_descriptions,
             reuse: bool = False,
-        ) -> None:
+        ) -> bool:
             if not reuse:
                 await context.defer()
             nonlocal current_page, max_page, current_limit
             if not diffs:
                 if reuse:
                     await context.defer()
-                return
+                return True
             diff = diffs[current_page]
             try:
                 youtube_api.update_video_description(
@@ -449,18 +450,20 @@ class SubstituteCommand:
                 await command_context.respond(
                     f"Nie udało się podmienić opisu filmu: `{e}`"
                 )
-            else:
-                diffs.pop(current_page)
-                done_diffs.append(diff)
-                max_page -= 1
-                current_limit -= 1
-                if current_page == max_page and max_page != 0:
-                    current_page -= 1
-                if not reuse:
-                    message = context.message
-                    await make_message(message=message)
+                return False
+            diffs.pop(current_page)
+            done_diffs.append(diff)
+            max_page -= 1
+            current_limit -= 1
+            if current_page == max_page and max_page != 0:
+                current_page -= 1
+            if not reuse:
+                message = context.message
+                await make_message(message=message)
+            return True
 
         async def on_finalize(context: miru.ViewContext) -> None:
+            nonlocal left_over, n_diffs
             await context.defer()
             await context.message.delete()
             message = await command_context.respond(
@@ -471,8 +474,17 @@ class SubstituteCommand:
                 await message.edit(
                     f"Podmieniam automatycznie, zostało: {current_limit}"
                 )
-                await on_submit(context, reuse=True)
+                ok = await on_submit(context, reuse=True)
+                if not ok:
+                    await message.edit(
+                        "Wystąpił błąd, którego szczegóły są podane powyżej.\n"
+                        "Zakończono podmianę automatyczną. Spróbuj ponownie później."
+                    )
+                    break
             await message.delete()
+            left_over = len(diffs)
+            diffs.clear()
+            n_diffs = 0
             await make_message()
 
         async def make_message(**kwargs: Any) -> None:
@@ -481,7 +493,14 @@ class SubstituteCommand:
                 await message.delete()
 
             if not diffs:
-                await command_context.respond("Seria podmian zakończona.")
+                await command_context.respond(
+                    "Seria podmian zakończona."
+                    + (
+                        f"\nLiczba filmów do podmiany następnego dnia: **{left_over}**."
+                        if left_over > 0
+                        else ""
+                    )
+                )
 
                 if done_diffs:
                     log.write_text(
@@ -555,7 +574,7 @@ class SubstituteCommand:
                     custom_id=f"submit_{with_title:d}_{with_description:d}",
                     label=f"Podmień {scope_description}",
                 )
-                submit_button.callback = functools.partial(
+                submit_button.callback = functools.partial(  # type: ignore[assignment]
                     on_submit, with_title=with_title, with_description=with_description
                 )
                 view.add_item(submit_button)
