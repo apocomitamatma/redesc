@@ -649,3 +649,96 @@ class SubstituteCommand:
             await make_message(ensure_message=True)
         else:
             await command_context.respond("Żadne filmy nie podlegają takiej podmianie.")
+
+
+@plugin.include
+@crescent.command(
+    name="dodajtagi",
+    description="Dodaj tagi do filmów na kanale YouTube.",
+    default_member_permissions=hikari.Permissions.ADMINISTRATOR,
+)
+class AddTags:
+    playlist_id: crescent.ClassCommandOption[str | None] = crescent.option(
+        str,
+        name="playlista",
+        default=None,
+        description="ID playlisty, z której mają być modfikowane filmy.",
+    )
+
+    async def callback(  # noqa: C901
+        self,
+        command_context: crescent.Context,
+    ) -> None:
+        """
+        Use the tags.json file with video IDs and tags to traverse videos
+        with the provided video IDs and add tags to them. The tags are added
+        via the YouTube API and they reuse data from the API that initially
+        collected information about the videos from tags.json
+        """
+        if not await ensure_proper_channel(command_context):
+            return
+        if not youtube_oauth2.valid:
+            await _authorize_impl(command_context)
+        else:
+            await command_context.defer()
+
+        tags_file = pathlib.Path("tags.json")
+
+        try:
+            tags = json.loads(tags_file.read_text())
+        except json.JSONDecodeError as e:
+            await command_context.respond(
+                f"Niepoprawny format pliku tags.json: {e}",
+                ephemeral=True,
+            )
+            return
+
+        playlist_id = self.playlist_id
+
+        if playlist_id is None:
+            playlist_id = app_config.default_playlist_id
+        _LOGGER.info("Using playlist ID: %s", playlist_id)
+
+        diffs: list[VideoDiff] = []
+
+        for item in youtube_api.get_playlist_items(playlist_id, limit=DEFAULT_LIMIT):
+            snippet = item["snippet"]
+            video_id = snippet["resourceId"]["videoId"]
+            if video_id in tags:
+                diff = VideoDiff(
+                    video_id=video_id,
+                    old_title=snippet["title"],
+                    new_title=snippet["title"],
+                    old_description=snippet["description"],
+                    new_description=snippet["description"],
+                    tags=snippet["tags"],
+                )
+                if not diff.tags:
+                    diff.tags = tags.get(video_id, {"tags": []})["tags"]
+                    diffs.append(diff)
+
+        def make_msg() -> str:
+            return f"Liczba filmów bez tagów do uzupełnienia: **{len(diffs)}**"
+
+        message = await command_context.respond(
+            make_msg(),
+            ensure_message=True,
+        )
+
+        for diff in diffs[:]:
+            try:
+                youtube_api.update_video_description(
+                    video_id=diff.video_id,
+                    video_title=diff.new_title,
+                    video_category_id=diff.video_category_id,
+                    description=diff.new_description,
+                    tags=diff.tags,
+                )
+            except googleapiclient.errors.HttpError as e:  # noqa: PERF203
+                await command_context.respond(
+                    f"Nie udało się podmienić opisu filmu: `{e}`",
+                )
+                return
+            else:
+                diffs.remove(diff)
+                await message.edit(make_msg())
