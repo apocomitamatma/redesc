@@ -70,6 +70,7 @@ class YouTubeAPI:
         self,
         video_id: str,
         description: str,
+        tags: list[str],
         video_title: str | None = None,
         video_category_id: str | None = None,
     ) -> dict[str, Any]:
@@ -102,6 +103,7 @@ class YouTubeAPI:
                     "title": video_title,
                     "categoryId": video_category_id,
                     "description": description,
+                    "tags": tags,
                 },
             },
         )

@@ -151,6 +151,7 @@ class VideoDiff:
     new_title: str
     old_description: str
     new_description: str
+    tags: list[str]
     video_category_id: str | None = None
 
 
@@ -353,6 +354,7 @@ class SubstituteCommand:
                         new_title=new_title,
                         old_description=old_description,
                         new_description=new_description,
+                        tags=snippet["tags"],
                     ),
                 )
 
@@ -457,6 +459,7 @@ class SubstituteCommand:
                         if with_description
                         else diff.old_description
                     ),
+                    tags=diff.tags,
                 )
             except googleapiclient.errors.HttpError as e:
                 await command_context.respond(
