@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 from typing import Any, cast
 
@@ -65,8 +66,8 @@ class YouTubeAPI:
                     )
                     .execute()
                 )
-                item["snippet"].update(data["items"][0]["snippet"])
-
+                with contextlib.suppress(IndexError):
+                    item["snippet"].update(data["items"][0]["snippet"])
             if page_idx == pages_to_fetch:
                 page_items = page_items[:last_page_limit]
             items.extend(page_items)
