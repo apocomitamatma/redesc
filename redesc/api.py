@@ -1,6 +1,6 @@
 from __future__ import annotations
-import logging
 
+import logging
 from typing import Any, cast
 
 import googleapiclient.discovery
@@ -52,9 +52,8 @@ class YouTubeAPI:
                 if exc.resp.status == 404:
                     if empty_on_404:
                         break
-                    raise LookupError(
-                        f"Playlist {playlist_id=} not found"
-                    ) from exc
+                    msg = f"Playlist {playlist_id=} not found"
+                    raise LookupError(msg) from exc
                 raise
             page_items = resp.get("items", [])
             if page_idx == pages_to_fetch:
@@ -81,10 +80,14 @@ class YouTubeAPI:
             description,
         )
         if video_title is None or video_category_id is None:
-            data = self.client.videos().list(
-                part="snippet",
-                id=video_id,
-            ).execute()
+            data = (
+                self.client.videos()
+                .list(
+                    part="snippet",
+                    id=video_id,
+                )
+                .execute()
+            )
             item = data["items"][0]
             if video_title is None:
                 video_title = item["snippet"]["title"]

@@ -18,6 +18,7 @@ from redesc.common import (
 
 load_dotenv()
 
+
 class AppConfig(ConfigModel):
     """App config model."""
 
@@ -35,13 +36,13 @@ class AppConfig(ConfigModel):
 
 class YouTubeOAuth2(ConfigModel):
     flow: dict[str, Any]
-    expiry: Optional[datetime.datetime] = None
-    client_id: Optional[str] = None
-    client_secret: Optional[str] = None
-    token_uri: Optional[str] = None
-    token: Optional[str] = None
-    refresh_token: Optional[str] = None
-    scopes: list[str] = ["https://www.googleapis.com/auth/youtube.force-ssl"]
+    expiry: Optional[datetime.datetime] = None  # noqa: UP007
+    client_id: Optional[str] = None  # noqa: UP007
+    client_secret: Optional[str] = None  # noqa: UP007
+    token_uri: Optional[str] = None  # noqa: UP007
+    token: Optional[str] = None  # noqa: UP007
+    refresh_token: Optional[str] = None  # noqa: UP007
+    scopes: list[str] = ["https://www.googleapis.com/auth/youtube.force-ssl"]  # noqa: RUF012
 
     def get_credentials(self) -> Credentials:
         return Credentials(
@@ -61,7 +62,8 @@ class YouTubeOAuth2(ConfigModel):
 
     @field_validator("expiry")
     def _normalize_expiry_datetime(
-        cls, expiry: datetime.datetime | None
+        cls,  # noqa: N805
+        expiry: datetime.datetime | None,
     ) -> datetime.datetime:
         if expiry is None:
             return datetime.datetime.utcnow()
@@ -70,6 +72,7 @@ class YouTubeOAuth2(ConfigModel):
     class Config(ConfigMeta):
         env_prefix = "GOOGLE_AUTH_"
         resource = "oauth2.json"
+        extra = "allow"  # type: ignore[assignment]
 
 
 if running_app:

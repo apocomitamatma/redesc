@@ -10,8 +10,7 @@ import logging
 import operator
 import pathlib
 import re
-from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import crescent
 import googleapiclient.errors
@@ -23,6 +22,9 @@ from oauthlib.oauth2.rfc6749.errors import AccessDeniedError
 
 from redesc.api import DEFAULT_LIMIT
 from redesc.common import app_config, youtube_api, youtube_oauth2
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,6 +42,8 @@ running_oauth2_server = False
 
 
 class AuthURLCapturer(str):
+    __slots__ = ("callback",)
+
     def __init__(self, callback: Callable[[str], None]) -> None:
         self.callback = callback
 
@@ -90,6 +94,7 @@ async def _authorize_impl(ctx: crescent.Context) -> None:
 
     await ctx.defer(ephemeral=True)
     future: asyncio.Future[str] = asyncio.Future()
+    tasks = set()
 
     def callback(url: str) -> None:
         future.set_result(url)
@@ -97,19 +102,23 @@ async def _authorize_impl(ctx: crescent.Context) -> None:
     @future.add_done_callback
     def url_captured(_: object) -> None:
         url = future.result()
-        asyncio.create_task(
-            ctx.respond(
-                f"Hej Artur! Uwierzytelnij mnie proszę za pomocą tego linku:\n{url}",
-                ephemeral=True,
-            )
+        tasks.add(
+            asyncio.create_task(
+                ctx.respond(
+                    "Hej Artur! Uwierzytelnij mnie proszę "
+                    f"za pomocą tego linku:\n{url}",
+                    ephemeral=True,
+                ),
+            ),
         )
 
     global running_oauth2_server
     if running_oauth2_server:
-        return None
+        return
     running_oauth2_server = True
     app_flow = InstalledAppFlow.from_client_config(
-        youtube_oauth2.flow, scopes=youtube_oauth2.scopes
+        youtube_oauth2.flow,
+        scopes=youtube_oauth2.scopes,
     )
     capturer = AuthURLCapturer(callback)
     loop = asyncio.get_running_loop()
@@ -171,15 +180,13 @@ def highlight_diffs(
         if old_line != new_line:
             log = f"{old_marker} {old_line}\n{new_marker} {new_line}"
             diff.append(log)
+        elif skip:
+            skipped = int(skip.group(1)) + 1
+            diff[-1] = f"({skipped} {_pronounce_lines(skipped)} bez zmian)"
         else:
-            if skip:
-                skipped = int(skip.group(1)) + 1
-                diff[-1] = f"({skipped} {_pronounce_lines(skipped)} bez zmian)"
-            else:
-                log = f"({1} linia bez zmian)"
-                diff.append(log)
-    summary = sep.join(diff)
-    return summary
+            log = f"({1} linia bez zmian)"
+            diff.append(log)
+    return sep.join(diff)
 
 
 def argument_unescape(argument: str) -> str:
@@ -257,7 +264,7 @@ class SubstituteCommand:
         default=True,
     )
 
-    async def callback(
+    async def callback(  # noqa: C901
         self,
         command_context: crescent.Context,
     ) -> None:
@@ -271,7 +278,8 @@ class SubstituteCommand:
 
         if not (self.include_titles or self.include_descriptions):
             await command_context.respond(
-                "Nie wybrano żadnych elementów do podmiany.", ephemeral=True
+                "Nie wybrano żadnych elementów do podmiany.",
+                ephemeral=True,
             )
             return
 
@@ -286,7 +294,8 @@ class SubstituteCommand:
             playlist_id = match.group("playlist_id")
             if not playlist_id:
                 await command_context.respond(
-                    "Niepoprawny identyfikator playlisty.", ephemeral=True
+                    "Niepoprawny identyfikator playlisty.",
+                    ephemeral=True,
                 )
                 return
 
@@ -300,7 +309,8 @@ class SubstituteCommand:
             regex = re.compile(expression)
         except re.error as e:
             await command_context.respond(
-                f"Niepoprawne wyrażenie regularne: {e}", ephemeral=True
+                f"Niepoprawne wyrażenie regularne: {e}",
+                ephemeral=True,
             )
             return
 
@@ -316,7 +326,8 @@ class SubstituteCommand:
                     new_title = regex.sub(replacement, old_title)
                 except re.error as e:
                     await command_context.respond(
-                        f"Niepoprawne wyrażenie zastępujące: {e}", ephemeral=True
+                        f"Niepoprawne wyrażenie zastępujące: {e}",
+                        ephemeral=True,
                     )
                     return
             else:
@@ -327,7 +338,8 @@ class SubstituteCommand:
                     new_description = regex.sub(replacement, old_description)
                 except re.error as e:
                     await command_context.respond(
-                        f"Niepoprawne wyrażenie zastępujące: {e}", ephemeral=True
+                        f"Niepoprawne wyrażenie zastępujące: {e}",
+                        ephemeral=True,
                     )
                     return
             else:
@@ -341,7 +353,7 @@ class SubstituteCommand:
                         new_title=new_title,
                         old_description=old_description,
                         new_description=new_description,
-                    )
+                    ),
                 )
 
         def create_embeds() -> list[hikari.Embed]:
@@ -448,7 +460,7 @@ class SubstituteCommand:
                 )
             except googleapiclient.errors.HttpError as e:
                 await command_context.respond(
-                    f"Nie udało się podmienić opisu filmu: `{e}`"
+                    f"Nie udało się podmienić opisu filmu: `{e}`",
                 )
                 return False
             diffs.pop(current_page)
@@ -472,13 +484,13 @@ class SubstituteCommand:
             )
             while current_limit > 0:
                 await message.edit(
-                    f"Podmieniam automatycznie, zostało: {current_limit}"
+                    f"Podmieniam automatycznie, zostało: {current_limit}",
                 )
                 ok = await on_submit(context, reuse=True)
                 if not ok:
                     await message.edit(
                         "Wystąpił błąd, którego szczegóły są podane powyżej.\n"
-                        "Zakończono podmianę automatyczną. Spróbuj ponownie później."
+                        "Zakończono podmianę automatyczną. Spróbuj ponownie później.",
                     )
                     break
             await message.delete()
@@ -499,7 +511,7 @@ class SubstituteCommand:
                         f"\nLiczba filmów do podmiany następnego dnia: **{left_over}**."
                         if left_over > 0
                         else ""
-                    )
+                    ),
                 )
 
                 if done_diffs:
@@ -529,7 +541,7 @@ class SubstituteCommand:
                     await command_context.respond("Załączam raport:", attachment=log)
                 else:
                     await command_context.respond(
-                        "Nie dokonano żadnej podmiany, dlatego nie ma raportu."
+                        "Nie dokonano żadnej podmiany, dlatego nie ma raportu.",
                     )
                 return
 
@@ -566,7 +578,7 @@ class SubstituteCommand:
                 ),
             ):
                 scope_description = " i ".join(
-                    itertools.compress(DIFF_SCOPES, scope_selectors)
+                    itertools.compress(DIFF_SCOPES, scope_selectors),
                 )
                 with_title, with_description = scope_selectors
                 submit_button = miru.Button(
@@ -575,7 +587,9 @@ class SubstituteCommand:
                     label=f"Podmień {scope_description}",
                 )
                 submit_button.callback = functools.partial(  # type: ignore[assignment]
-                    on_submit, with_title=with_title, with_description=with_description
+                    on_submit,
+                    with_title=with_title,
+                    with_description=with_description,
                 )
                 view.add_item(submit_button)
 

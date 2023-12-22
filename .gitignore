@@ -1,3 +1,7 @@
+# This file was generated from bswck/skeleton@61eeffb.
+# Instead of changing this particular file, you might want to alter the template:
+# https://github.com/bswck/skeleton/tree/61eeffb/project/.gitignore.jinja
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -159,6 +163,5 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# Private settings
-config.yml
-oauth2.json
+# VSCode workspace files
+*.code-workspace

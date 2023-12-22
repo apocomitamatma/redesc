@@ -1,0 +1,19 @@
+_commit: 61eeffb
+_src_path: gh:bswck/skeleton
+author_username: bswck
+docs: false
+email_address: bswck.dev@gmail.com
+github_username: apocomitamatma
+license_name: MIT
+org_full_name: Bartosz Sławecki
+package_name: redesc
+project_description: A tool for substituting YouTube video descriptions with regex.
+publish_on_pypi: true
+pypi_project_description: A tool for substituting YouTube video descriptions with
+    regex.
+pypi_project_name: redesc
+python_version: '3.10'
+repo_name: redesc
+tests: false
+use_precommit: true
+visibility: public

@@ -6,10 +6,9 @@ import miru
 
 from redesc.common import app, app_config, app_var, client, client_var, running_app_var
 
-
 _LOGGER = logging.getLogger("redesc.main")
 
-running_app_var.set(True)
+running_app_var.set(True)  # noqa: FBT003
 __import__("redesc.setup")
 
 app_var.set(hikari.GatewayBot(token=app_config.token))
@@ -28,10 +27,8 @@ async def interaction_made(event: hikari.InteractionCreateEvent) -> None:
             interaction.user.id,
             interaction.command_name,
             " ".join(
-                (
-                    f"{option.name}:{option.value}"
-                    for option in (interaction.options or [])
-                )
+                f"{option.name}:{option.value}"
+                for option in (interaction.options or [])
             ),
         )
     elif isinstance(interaction, hikari.ComponentInteraction):
