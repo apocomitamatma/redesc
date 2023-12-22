@@ -56,6 +56,17 @@ class YouTubeAPI:
                     raise LookupError(msg) from exc
                 raise
             page_items = resp.get("items", [])
+            for item in page_items:
+                data = (
+                    self.client.videos()
+                    .list(
+                        part="snippet",
+                        id=item["snippet"]["resourceId"]["videoId"],
+                    )
+                    .execute()
+                )
+                item["snippet"].update(data["items"][0]["snippet"])
+
             if page_idx == pages_to_fetch:
                 page_items = page_items[:last_page_limit]
             items.extend(page_items)

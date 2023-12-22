@@ -711,7 +711,7 @@ class AddTags:
                     new_title=snippet["title"],
                     old_description=snippet["description"],
                     new_description=snippet["description"],
-                    tags=snippet.get("tags", []),
+                    tags=snippet["tags"],
                 )
                 if not diff.tags:
                     diff.tags = tags.get(video_id, {"tags": []})["tags"]
