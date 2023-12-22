@@ -66,9 +66,10 @@ class YouTubeAPI:
                     .execute()
                 )
                 try:
-                    item["snippet"].update(data["items"][0]["snippet"])
+                    data_item = data["items"][0]["snippet"]
                 except IndexError:
-                    item["snippet"].update(tags=[])
+                    data_item = {"tags": []}
+                item["snippet"].update(data_item.setdefault("tags", []))
             if page_idx == pages_to_fetch:
                 page_items = page_items[:last_page_limit]
             items.extend(page_items)
