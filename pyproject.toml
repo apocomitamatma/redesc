@@ -18,7 +18,7 @@ Distribution = "https://pypi.org/project/redesc/"
 Coverage = "https://coverage-badge.samuelcolvin.workers.dev/redirect/apocomitamatma/redesc"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<=3.12"
+python = ">=3.9,<=3.12"
 configzen = "^0.9.0"
 proxyvars = "^0.9.1"
 hikari = "^2.0.0.dev120"
