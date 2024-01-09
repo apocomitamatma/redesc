@@ -4,12 +4,14 @@ import asyncio
 import dataclasses
 import datetime
 import functools
+import io
 import itertools
 import json
 import logging
 import operator
 import pathlib
 import re
+import tempfile
 import traceback
 from typing import TYPE_CHECKING, Any
 
@@ -747,10 +749,11 @@ class AddTags:
                         tags=diff.tags,
                     )
                 except googleapiclient.errors.HttpError as e:  # noqa: PERF203
-                    await command_context.respond(
+                    pathlib.Path("crash.txt").write_text(
                         f"Nie udało się podmienić podpisu filmu: `{e}`, "
-                        f"tagi: `{diff.tags}`",
+                        f"tagi: `{diff}`",
                     )
+                    await command_context.respond(attachment=hikari.File("crash.txt"))
                     return
                 else:
                     url = f"https://www.youtube.com/watch?v={diff.video_id}"
@@ -761,4 +764,5 @@ class AddTags:
                         reply=message,
                     )
         except Exception:
-            await channel.send(f"```{traceback.format_exc()}```")
+            pathlib.Path("crash.txt").write_text(traceback.format_exc())
+            await channel.send(attachment=hikari.File("crash.txt"))
