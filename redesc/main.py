@@ -159,6 +159,16 @@ class VideoDiff:
     tags: list[str]
     video_category_id: str | None = None
 
+    def __post_init__(self) -> None:
+        total = 0
+        all_tags = []
+        for tag in self.tags:
+            total += len(tag) + (2 * (" " in tag))
+            all_tags.append(tag)
+            if total >= 500:
+                break
+        self.tags = all_tags
+
 
 def _pronounce_lines(count: int) -> str:
     if count == 1:
@@ -760,7 +770,7 @@ class AddTags:
                     diffs.remove(diff)
                     await message.edit(make_msg())
                     await channel.send(
-                        f"Uzupełniono tagi w filmie [`{diff.new_title}`]({url}).",
+                        f"Uzupełniono tagi w filmie [`{diff.new_title}`]({url}): `{diff.tags}`",
                         reply=message,
                     )
         except Exception:
