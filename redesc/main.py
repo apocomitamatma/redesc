@@ -13,12 +13,14 @@ import re
 from typing import TYPE_CHECKING, Any
 
 import crescent
-import googleapiclient.errors
+import googleapiclient.errors  # type: ignore[import-untyped]
 import hikari
 import miru
-from google.auth.exceptions import RefreshError
-from google_auth_oauthlib.flow import InstalledAppFlow
-from oauthlib.oauth2.rfc6749.errors import AccessDeniedError
+from google.auth.exceptions import RefreshError  # type: ignore[import-untyped]
+from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore[import-untyped]
+from oauthlib.oauth2.rfc6749.errors import (
+    AccessDeniedError,  # type: ignore[import-untyped]
+)
 
 from redesc.api import DEFAULT_LIMIT
 from redesc.common import app_config, youtube_api, youtube_oauth2
@@ -601,7 +603,7 @@ class SubstituteCommand:
                 label="Zakończ" if done_diffs else "Anuluj",
                 custom_id="end",
             )
-            end_button.callback = on_end
+            end_button.callback = on_end  # type: ignore[method-assign]
             view.add_item(end_button)
 
             if current_limit > 1:
@@ -610,12 +612,17 @@ class SubstituteCommand:
                     custom_id="finalize",
                     label=f"Podmień wszystkie ({current_limit})",
                 )
-                finalize_button.callback = on_finalize
+                finalize_button.callback = on_finalize  # type: ignore[method-assign]
                 view.add_item(finalize_button)
 
             embeds = create_embeds()
             done = 0
-            content = f"_Komenda wywołana przez {command_context.member.mention}._\n"
+            invoked_by = (
+                (member := command_context.member)
+                and member.mention
+                or "(brak informacji)"
+            )
+            content = f"_Komenda wywołana przez {invoked_by}._\n"
             if done > 0:
                 content += f"Podmieniono opis w {done} filmach.\n"
             if current_page > current_limit:
@@ -718,12 +725,13 @@ class AddTags:
                     diffs.append(diff)
 
         def make_msg() -> str:
-            return f"Liczba filmów bez tagów do uzupełnienia: **{len(diffs)}**"
+            return f"Liczba filmów bez tagów do uzupełnienia: **{len(diffs)}**\n"
 
         message = await command_context.respond(
             make_msg(),
             ensure_message=True,
         )
+        channel: hikari.GuildTextChannel = await message.fetch_channel()  # type: ignore[assignment]
 
         for diff in diffs[:]:
             try:
@@ -740,5 +748,10 @@ class AddTags:
                 )
                 return
             else:
+                url = f"https://www.youtube.com/watch?v={diff.video_id}"
                 diffs.remove(diff)
                 await message.edit(make_msg())
+                await channel.send(
+                    f"Uzupełniono tagi w filmie [`{diff.new_title}`]({url}).",
+                    reply=message,
+                )
