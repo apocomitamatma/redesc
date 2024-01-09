@@ -4,14 +4,12 @@ import asyncio
 import dataclasses
 import datetime
 import functools
-import io
 import itertools
 import json
 import logging
 import operator
 import pathlib
 import re
-import tempfile
 import traceback
 from typing import TYPE_CHECKING, Any
 
@@ -723,7 +721,8 @@ class AddTags:
             diffs: list[VideoDiff] = []
 
             for item in youtube_api.get_playlist_items(
-                playlist_id, limit=DEFAULT_LIMIT
+                playlist_id,
+                limit=DEFAULT_LIMIT,
             ):
                 snippet = item["snippet"]
                 video_id = snippet["resourceId"]["videoId"]
