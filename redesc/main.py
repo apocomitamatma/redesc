@@ -10,6 +10,7 @@ import logging
 import operator
 import pathlib
 import re
+import traceback
 from typing import TYPE_CHECKING, Any
 
 import crescent
@@ -682,76 +683,82 @@ class AddTags:
         via the YouTube API and they reuse data from the API that initially
         collected information about the videos from tags.json
         """
-        if not await ensure_proper_channel(command_context):
-            return
-        if not youtube_oauth2.valid:
-            await _authorize_impl(command_context)
-        else:
-            await command_context.defer()
-
-        tags_file = pathlib.Path("tags.json")
-
         try:
-            tags = json.loads(tags_file.read_text())
-        except json.JSONDecodeError as e:
-            await command_context.respond(
-                f"Niepoprawny format pliku tags.json: {e}",
-                ephemeral=True,
-            )
-            return
+            if not await ensure_proper_channel(command_context):
+                return
+            if not youtube_oauth2.valid:
+                await _authorize_impl(command_context)
+            else:
+                await command_context.defer()
 
-        playlist_id = self.playlist_id
+            tags_file = pathlib.Path("tags.json")
 
-        if playlist_id is None:
-            playlist_id = app_config.default_playlist_id
-        _LOGGER.info("Using playlist ID: %s", playlist_id)
-
-        diffs: list[VideoDiff] = []
-
-        for item in youtube_api.get_playlist_items(playlist_id, limit=DEFAULT_LIMIT):
-            snippet = item["snippet"]
-            video_id = snippet["resourceId"]["videoId"]
-            if video_id in tags:
-                diff = VideoDiff(
-                    video_id=video_id,
-                    old_title=snippet["title"],
-                    new_title=snippet["title"],
-                    old_description=snippet["description"],
-                    new_description=snippet["description"],
-                    tags=snippet.get("tags") or [],
-                )
-                if not diff.tags:
-                    diff.tags = tags.get(video_id, {"tags": []})["tags"]
-                    diffs.append(diff)
-
-        def make_msg() -> str:
-            return f"Liczba filmów bez tagów do uzupełnienia: **{len(diffs)}**\n"
-
-        message = await command_context.respond(
-            make_msg(),
-            ensure_message=True,
-        )
-        channel: hikari.GuildTextChannel = await message.fetch_channel()  # type: ignore[assignment]
-
-        for diff in diffs[:]:
             try:
-                youtube_api.update_video_description(
-                    video_id=diff.video_id,
-                    video_title=diff.new_title,
-                    video_category_id=diff.video_category_id,
-                    description=diff.new_description,
-                    tags=diff.tags,
-                )
-            except googleapiclient.errors.HttpError as e:  # noqa: PERF203
+                tags = json.loads(tags_file.read_text())
+            except json.JSONDecodeError as e:
                 await command_context.respond(
-                    f"Nie udało się podmienić opisu filmu: `{e}`",
+                    f"Niepoprawny format pliku tags.json: {e}",
+                    ephemeral=True,
                 )
                 return
-            else:
-                url = f"https://www.youtube.com/watch?v={diff.video_id}"
-                diffs.remove(diff)
-                await message.edit(make_msg())
-                await channel.send(
-                    f"Uzupełniono tagi w filmie [`{diff.new_title}`]({url}).",
-                    reply=message,
-                )
+
+            playlist_id = self.playlist_id
+
+            if playlist_id is None:
+                playlist_id = app_config.default_playlist_id
+            _LOGGER.info("Using playlist ID: %s", playlist_id)
+
+            diffs: list[VideoDiff] = []
+
+            for item in youtube_api.get_playlist_items(
+                playlist_id, limit=DEFAULT_LIMIT
+            ):
+                snippet = item["snippet"]
+                video_id = snippet["resourceId"]["videoId"]
+                if video_id in tags:
+                    diff = VideoDiff(
+                        video_id=video_id,
+                        old_title=snippet["title"],
+                        new_title=snippet["title"],
+                        old_description=snippet["description"],
+                        new_description=snippet["description"],
+                        tags=snippet.get("tags") or [],
+                    )
+                    if not diff.tags:
+                        diff.tags = tags.get(video_id, {"tags": []})["tags"]
+                        diffs.append(diff)
+
+            def make_msg() -> str:
+                return f"Liczba filmów bez tagów do uzupełnienia: **{len(diffs)}**\n"
+
+            message = await command_context.respond(
+                make_msg(),
+                ensure_message=True,
+            )
+            channel: hikari.GuildTextChannel = await message.fetch_channel()  # type: ignore[assignment]
+
+            for diff in diffs[:]:
+                try:
+                    youtube_api.update_video_description(
+                        video_id=diff.video_id,
+                        video_title=diff.new_title,
+                        video_category_id=diff.video_category_id,
+                        description=diff.new_description,
+                        tags=diff.tags,
+                    )
+                except googleapiclient.errors.HttpError as e:  # noqa: PERF203
+                    await command_context.respond(
+                        f"Nie udało się podmienić podpisu filmu: `{e}`, "
+                        f"obiekt: `{diff}`",
+                    )
+                    return
+                else:
+                    url = f"https://www.youtube.com/watch?v={diff.video_id}"
+                    diffs.remove(diff)
+                    await message.edit(make_msg())
+                    await channel.send(
+                        f"Uzupełniono tagi w filmie [`{diff.new_title}`]({url}).",
+                        reply=message,
+                    )
+        except Exception:
+            await channel.send(f"```{traceback.format_exc()}```")
