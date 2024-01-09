@@ -749,7 +749,7 @@ class AddTags:
                 except googleapiclient.errors.HttpError as e:  # noqa: PERF203
                     await command_context.respond(
                         f"Nie udało się podmienić podpisu filmu: `{e}`, "
-                        f"obiekt: `{diff}`",
+                        f"tagi: `{diff.tags}`",
                     )
                     return
                 else:
