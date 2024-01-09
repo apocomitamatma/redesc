@@ -162,7 +162,7 @@ class VideoDiff:
         all_tags = []
         for tag in self.tags:
             total += len(tag) + (2 * (" " in tag))
-            if total >= 500:
+            if total >= 400:
                 break
             total += 1
             all_tags.append(tag)
