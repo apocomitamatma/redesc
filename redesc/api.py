@@ -12,6 +12,18 @@ _LOGGER = logging.getLogger("redesc.api")
 DEFAULT_LIMIT: int = 1000000
 
 
+def fix_tags(tags: list[str]) -> list[str]:
+    total = 0
+    all_tags = []
+    for tag in tags:
+        total += len(tag) + (2 * (" " in tag))
+        if total >= 350:
+            break
+        total += 1
+        all_tags.append(tag)
+    return all_tags
+
+
 class YouTubeAPI:
     def __init__(
         self,
@@ -115,6 +127,7 @@ class YouTubeAPI:
             if video_category_id is None:
                 video_category_id = item["snippet"]["categoryId"]
 
+        tags[:] = fix_tags(tags)
         request = self.client.videos().update(
             part="snippet",
             body={
@@ -123,7 +136,7 @@ class YouTubeAPI:
                     "title": video_title,
                     "categoryId": video_category_id,
                     "description": description,
-                    "tags": tags,
+                    "tags": fix_tags(tags),
                 },
             },
         )
