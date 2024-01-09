@@ -38,6 +38,7 @@ class YouTubeAPI:
     ) -> list[dict[str, Any]]:
         current_page = None
         items = []
+        item_map = {}
         pages_to_fetch, last_page_limit = divmod(limit, 50)
         for page_idx in range(pages_to_fetch + 1):
             request = self.client.playlistItems().list(
@@ -56,23 +57,28 @@ class YouTubeAPI:
                     raise LookupError(msg) from exc
                 raise
             page_items = resp.get("items", [])
-            for item in page_items:
-                data = (
-                    self.client.videos()
-                    .list(
-                        part="snippet",
-                        id=item["snippet"]["resourceId"]["videoId"],
-                    )
-                    .execute()
-                )
-                try:
-                    data_item = data["items"][0]["snippet"]
-                except IndexError:
-                    data_item = {"tags": []}
-                item["snippet"].update({"tags": data_item.setdefault("tags", [])})
             if page_idx == pages_to_fetch:
                 page_items = page_items[:last_page_limit]
             items.extend(page_items)
+            for item in items:
+                item_map[item["id"]] = item
+            items_with_tags = (
+                self.client.videos()
+                .list(
+                    part="snippet",
+                    id=",".join(item["id"] for item in page_items),
+                )
+                .execute()
+            )
+            for item_with_tags in items_with_tags["items"]:
+                try:
+                    item_snippet = item_with_tags["snippet"]
+                except IndexError:
+                    item_snippet = {"tags": []}
+                item_map[item_snippet["id"]]["snippet"].update(
+                    {"tags": item_snippet.setdefault("tags", [])},
+                )
+
             if len(items) >= limit:
                 break
             current_page = resp.get("nextPageToken")

@@ -356,7 +356,7 @@ class SubstituteCommand:
                         new_title=new_title,
                         old_description=old_description,
                         new_description=new_description,
-                        tags=snippet["tags"],
+                        tags=snippet.get("tags") or [],
                     ),
                 )
 
