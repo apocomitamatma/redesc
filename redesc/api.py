@@ -83,13 +83,10 @@ class YouTubeAPI:
                 .execute()
             )
             for item_with_tags in items_with_tags["items"]:
-                try:
-                    item_snippet = item_with_tags["snippet"]
-                except IndexError:
-                    item_snippet = {"tags": []}
-                item_map[item_snippet["id"]]["snippet"].update(
-                    {"tags": item_snippet.setdefault("tags", [])},
-                )
+                item_snippet = item_with_tags["snippet"]
+                item_map[item_with_tags["id"]]["snippet"][
+                    "tags"
+                ] = item_snippet.setdefault("tags", [])
 
             if len(items) >= limit:
                 break

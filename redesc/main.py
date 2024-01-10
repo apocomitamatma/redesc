@@ -736,8 +736,10 @@ class AddTags:
                         new_description=snippet["description"],
                         tags=snippet.get("tags") or [],
                     )
-                    if not diff.tags:
-                        diff.tags = tags.get(video_id, {"tags": []})["tags"]
+                    if diff.tags:
+                        continue
+                    diff.tags = tags.get(video_id, {"tags": []})["tags"]
+                    if diff.tags:
                         diffs.append(diff)
 
             def make_msg() -> str:
