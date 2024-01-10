@@ -9,6 +9,7 @@ import json
 import logging
 import operator
 import pathlib
+import pprint
 import re
 import traceback
 from typing import TYPE_CHECKING, Any
@@ -762,11 +763,11 @@ class AddTags:
                     )
                 except googleapiclient.errors.HttpError as e:  # noqa: PERF203
                     pathlib.Path("crash.txt").write_text(
-                        f"Nie udało się podmienić podpisu filmu: `{e}`, "
-                        f"tagi: `{diff}`",
+                        "Nie udało się podmienić podpisu filmu.\n"
+                        f"{e}\n"
+                        f"tagi:\n`{pprint.pformat(diff)}`",
                     )
-                    await command_context.respond(attachment=hikari.File("crash.txt"))
-                    return
+                    await channel.send(attachment=hikari.File("crash.txt"))
                 else:
                     url = f"https://www.youtube.com/watch?v={diff.video_id}"
                     diffs.remove(diff)
