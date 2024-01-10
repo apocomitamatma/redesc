@@ -73,12 +73,14 @@ class YouTubeAPI:
                 page_items = page_items[:last_page_limit]
             items.extend(page_items)
             for item in items:
+                item["id"] = item["snippet"]["resourceId"]["videoId"]
                 item_map[item["id"]] = item
+            item_ids = ",".join(item["id"] for item in page_items)
             items_with_tags = (
                 self.client.videos()
                 .list(
                     part="snippet",
-                    id=",".join(item["id"] for item in page_items),
+                    id=item_ids,
                 )
                 .execute()
             )

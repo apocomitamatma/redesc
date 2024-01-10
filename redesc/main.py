@@ -695,6 +695,7 @@ class AddTags:
         via the YouTube API and they reuse data from the API that initially
         collected information about the videos from tags.json
         """
+        channel: hikari.GuildTextChannel = command_context.channel  # type: ignore[assignment]
         try:
             if not await ensure_proper_channel(command_context):
                 return
@@ -750,7 +751,6 @@ class AddTags:
                 make_msg(),
                 ensure_message=True,
             )
-            channel: hikari.GuildTextChannel = await message.fetch_channel()  # type: ignore[assignment]
 
             for diff in diffs[:]:
                 try:
@@ -768,6 +768,7 @@ class AddTags:
                         f"tagi:\n`{pprint.pformat(diff)}`",
                     )
                     await channel.send(attachment=hikari.File("crash.txt"))
+                    break
                 else:
                     url = f"https://www.youtube.com/watch?v={diff.video_id}"
                     diffs.remove(diff)
